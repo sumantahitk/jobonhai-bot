@@ -37,22 +37,23 @@
 #     }
 #     requests.post(url, json=payload)
 
+
+
+# notifier.py
+
 import requests
+import time
 from config import BOT_TOKEN, CHAT_ID
 
 
 def send_telegram(job):
-
     # ===============================
     # QUALIFICATION PRIORITY LOGIC
     # ===============================
     qualification = "Not Mentioned"
 
-    # 1️⃣ FIRST priority: education list (from list page)
     if job.get("education"):
         qualification = ", ".join(job["education"])
-
-    # 2️⃣ Fallback: detailed qualification (from detail page)
     elif job.get("qualification"):
         qualification = job["qualification"]
 
@@ -81,9 +82,6 @@ def send_telegram(job):
     official_site = job.get("important_links", {}).get("official_website")
     apply_mode = job.get("apply_mode")
 
-    # ===============================
-    # APPLY / OFFICIAL WEBSITE LOGIC
-    # ===============================
     if official_site:
         msg += f"\n🌐 *Official Website:* {official_site}"
 
@@ -93,14 +91,11 @@ def send_telegram(job):
         if apply_link:
             msg += f"\n📝 *Apply Online:* {apply_link}"
 
-    # ===============================
-    # NOTIFICATION PDF
-    # ===============================
     if job.get("notification_pdf"):
         msg += f"\n📄 *Official Notification PDF:*\n{job['notification_pdf']}"
 
     # ===============================
-    # SEND MESSAGE
+    # SEND MESSAGE (SAFE + RETRY)
     # ===============================
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {
@@ -110,4 +105,12 @@ def send_telegram(job):
         "disable_web_page_preview": True
     }
 
-    requests.post(url, json=payload, timeout=10)
+    for attempt in range(3):  # retry max 3 times
+        try:
+            requests.post(url, json=payload, timeout=30)
+            return
+        except requests.exceptions.ReadTimeout:
+            time.sleep(2)
+        except Exception as e:
+            print("Telegram error:", e)
+            return
