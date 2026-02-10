@@ -107,10 +107,11 @@ def send_telegram(job):
 
     for attempt in range(3):  # retry max 3 times
         try:
-            requests.post(url, json=payload, timeout=30)
+            requests.post(url, json=payload, timeout=20)
+            time.sleep(1.2)# rate-limit safety
             return
         except requests.exceptions.ReadTimeout:
-            time.sleep(2)
+            time.sleep(5)
         except Exception as e:
             print("Telegram error:", e)
             return

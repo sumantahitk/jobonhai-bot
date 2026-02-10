@@ -5,6 +5,7 @@ from scraper_detail import fetch_detail_data
 from storage import load_jobs, save_jobs, job_exists
 from notifier import send_telegram
 from datetime import date
+import time
 
 MAX_ALERTS = 5   # 🔒 prevent Telegram spam
 
@@ -15,16 +16,18 @@ def main():
 
     scraped_jobs = fetch_list_jobs()
     sent_count = 0
+    total_new = 0
 
     for job in scraped_jobs:
         if job_exists(old_jobs, job["detail_page"]):
             continue
 
+        total_new += 1
+
         # Fetch detail page only for NEW jobs
         details = fetch_detail_data(job["detail_page"])
         job.update(details)
 
-        # Optional: ensure post date exists
         if not job.get("date_detected"):
             job["date_detected"] = date.today().strftime("%d-%m-%Y")
 
@@ -32,20 +35,21 @@ def main():
         if sent_count < MAX_ALERTS:
             send_telegram(job)
             sent_count += 1
+            time.sleep(1.5)  # Telegram safety
 
         new_jobs.append(job)
 
-    # Summary message if many jobs found
-    extra = len(new_jobs) - len(old_jobs) - MAX_ALERTS
+    # ✅ Summary message (SAFE)
+    extra = total_new - sent_count
     if extra > 0:
         send_telegram({
-            "title": "More Jobs Available",
+            "title": f"{extra} more new jobs found",
             "organization": "Jobonhai",
-            "last_date": "Check Website",
+            "last_date": "Visit website",
             "date_detected": date.today().strftime("%d-%m-%Y"),
             "category": "Multiple",
-            "state": "Various",
-            "qualification": "",
+            "state": "India",
+            "qualification": "Various",
             "posts": "",
             "important_links": {},
             "apply_mode": "",
