@@ -21,8 +21,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install --no-cache-dir -r prod-requirements.txt
 
+      # ✅ DOWNLOAD PREVIOUS JOBS (if exists)
+      - name: Download previous jobs data
+        uses: actions/download-artifact@v4
+        with:
+          name: jobs-data
+        continue-on-error: true
+
       - name: Run bot
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: python main.py
+
+      # ✅ SAVE JOBS FOR NEXT RUN
+      - name: Upload jobs data
+        uses: actions/upload-artifact@v4
+        with:
+          name: jobs-data
+          path: jobs.json
