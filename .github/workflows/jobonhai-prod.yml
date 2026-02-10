@@ -26,6 +26,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: jobs-data
+          path: .
         continue-on-error: true
 
       - name: Run bot
